@@ -1,94 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Private Certificate Generator</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f4f4f4;
-    }
-    .container {
-      text-align: center;
-      padding: 20px;
-      background: #fff;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    h1 {
-      font-size: 24px;
-      margin-bottom: 10px;
-    }
-    p {
-      font-size: 16px;
-      margin-bottom: 20px;
-      color: #555;
-    }
-    input[type="text"] {
-      width: 300px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      margin-bottom: 20px;
-    }
-    button {
-      padding: 10px 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prov Cert Gen</title>
 </head>
 <body>
-  <div class="container">
     <h1>Certificate Generator</h1>
-    <p>Enter your UDID to generate a private certificate bundle.</p>
-    <input type="text" id="udid" placeholder="Enter UDID" />
-    <br />
-    <button onclick="generateCertificate()">Get</button>
-  </div>
+    <form id="cert-form">
+        <label for="udid">Enter UDID:</label>
+        <input type="text" id="udid" name="udid" required>
+        <button type="submit">Get Certificate</button>
+    </form>
 
-  <script>
-    async function generateCertificate() {
-      const udid = document.getElementById('udid').value;
+    <p id="status"></p>
 
-      if (!udid) {
-        alert('Please enter a UDID.');
-        return;
-      }
+    <script>
+        document.getElementById('cert-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const udid = document.getElementById('udid').value;
+            if (!udid) {
+                document.getElementById('status').innerText = 'Please enter a UDID.';
+                return;
+            }
 
-      try {
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ udid }),
+            // Send the UDID to the backend to generate the certificate
+            try {
+                document.getElementById('status').innerText = 'Generating...';
+                const response = await fetch(`/generate?udid=${udid}`);
+                if (!response.ok) {
+                    throw new Error('Failed to generate certificate.');
+                }
+                const data = await response.blob();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(data);
+                link.download = `${udid}_bundle.zip`;
+                link.click();
+                document.getElementById('status').innerText = 'Download started!';
+            } catch (error) {
+                document.getElementById('status').innerText = `Error: ${error.message}`;
+            }
         });
-
-        if (!response.ok) {
-          throw new Error('Failed to generate certificate.');
-        }
-
-        const blob = await response.blob();
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `${udid}_bundle.zip`;
-        link.click();
-      } catch (error) {
-        alert(error.message);
-      }
-    }
-  </script>
+    </script>
 </body>
 </html>
